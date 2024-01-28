@@ -221,7 +221,7 @@ class DCNv2(nn.Module):
         super().__init__()
         self.cross_network = LowRankMixtureCrossNet(
             in_features=in_features,
-            num_layers=10,
+            num_layers=7,
             num_experts=5,
             low_rank=in_features // 4,
         )
