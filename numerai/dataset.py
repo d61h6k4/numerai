@@ -20,7 +20,19 @@ def get_targets(version: str) -> OrderedDict[str, int]:
     # read the metadata and display
     feature_metadata = json.load(open(f"data/v{version}/features.json"))
     assert "target" in feature_metadata["targets"]
-    return OrderedDict({v: k for k, v in enumerate(["target"])})
+    return OrderedDict(
+        {
+            v: k
+            for k, v in enumerate(
+                [
+                    "target",
+                    "target_cyrus_v4_60",
+                    "target_victor_v4_20",
+                    "target_waldo_v4_20",
+                ]
+            )
+        }
+    )
 
 
 class NumeraiDataset(TensorDataset):
@@ -53,9 +65,10 @@ def get_dataset(
     columns = list(targets.keys()) + list(features.keys())
 
     df = df[df["data_type"] == data_type][columns]
-    df["target"] = (df["target"] * 4).astype(int)
+    
     df[list(features.keys())] = df[list(features.keys())].astype(int)
-    df[list(targets.keys())] = df[list(targets.keys())].astype(np.int64)
+    # targets have nan in validation dataset only for few last eras
+    df[list(targets.keys())] = (df[list(targets.keys())].fillna(0.5) * 4).astype(np.int64)
 
     if num is not None:
         df = df.sample(n=num)

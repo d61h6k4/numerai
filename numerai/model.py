@@ -259,7 +259,28 @@ class NumeraiModel(nn.Module):
 
         self.embeddings_layer = EmbeddingsLayer(features)
         self.shared_bottom = DCNv2(3, 3 * num_features)
-        self.head_target = nn.Sequential(
+        self.target_head = nn.Sequential(
+            torch.nn.BatchNorm1d(num_features=3 * num_features),
+            torch.nn.Dropout1d(p=0.1),
+            nn.Linear(3 * num_features, 32, bias=False),
+            nn.ReLU(),
+            nn.Linear(32, 5),
+        )
+        self.cyrus_v4_60_head = nn.Sequential(
+            torch.nn.BatchNorm1d(num_features=3 * num_features),
+            torch.nn.Dropout1d(p=0.1),
+            nn.Linear(3 * num_features, 32, bias=False),
+            nn.ReLU(),
+            nn.Linear(32, 5),
+        )
+        self.victor_v4_20_head = nn.Sequential(
+            torch.nn.BatchNorm1d(num_features=3 * num_features),
+            torch.nn.Dropout1d(p=0.1),
+            nn.Linear(3 * num_features, 32, bias=False),
+            nn.ReLU(),
+            nn.Linear(32, 5),
+        )
+        self.waldo_v4_20_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
             torch.nn.Dropout1d(p=0.1),
             nn.Linear(3 * num_features, 32, bias=False),
@@ -269,15 +290,50 @@ class NumeraiModel(nn.Module):
 
     def forward(self, input: Mapping[str, torch.Tensor]) -> torch.Tensor:
         embeddings = self.embeddings_layer(input)
+
         x = self.shared_bottom(embeddings)
-        target = self.head_target(x)
-        return target
+
+        target = self.target_head(x)
+        cyrus_v4_60 = self.cyrus_v4_60_head(x)
+        victor_v4_20 = self.victor_v4_20_head(x)
+        waldo_v4_20 = self.waldo_v4_20_head(x)
+        return {
+            "target": target,
+            "cyrus_v4_60": cyrus_v4_60,
+            "victor_v4_20": victor_v4_20,
+            "waldo_v4_20": waldo_v4_20,
+        }
 
 
 def create_loss_fn(weights, device: str = "cpu"):
     target_loss = nn.CrossEntropyLoss(weight=weights["target"]).to(device)
+    cyrus_v4_60_loss = nn.CrossEntropyLoss(weight=weights["target_cyrus_v4_60"]).to(
+        device
+    )
+    victor_v4_20_loss = nn.CrossEntropyLoss(weight=weights["target_victor_v4_20"]).to(
+        device
+    )
+    waldo_v4_20_loss = nn.CrossEntropyLoss(weight=weights["target_waldo_v4_20"]).to(
+        device
+    )
 
     def loss_fn(inputs, targets):
-        return target_loss(input=inputs, target=targets[:, 0])
+        main_target = target_loss(input=inputs["target"], target=targets[:, 0])
+        cyrus_v4_60 = cyrus_v4_60_loss(
+            input=inputs["cyrus_v4_60"], target=targets[:, 1]
+        )
+        victor_v4_20 = victor_v4_20_loss(
+            input=inputs["victor_v4_20"], target=targets[:, 2]
+        )
+        waldo_v4_20 = waldo_v4_20_loss(
+            input=inputs["waldo_v4_20"], target=targets[:, 3]
+        )
+
+        return 0.2 * (main_target + cyrus_v4_60 + victor_v4_20 + waldo_v4_20), {
+            "target": main_target,
+            "waldo_v4_20": waldo_v4_20,
+            "victor_v4_20": victor_v4_20,
+            "cyrus_v4_60": cyrus_v4_60,
+        }
 
     return loss_fn

@@ -33,7 +33,7 @@ validation_loader = torch.utils.data.DataLoader(
         version=version,
         features=features,
         targets=targets,
-        num=10000,
+        num=100_000,
     ),
     batch_size=batch_size,
     shuffle=False,
@@ -44,18 +44,25 @@ model = NumeraiModel(features=features).to(device=device)
 
 # NB: Loss functions expect data in batches, so we're creating batches of 4
 # Represents the model's confidence in each of the 10 classes for a given input
-dummy_outputs = torch.rand(4, 5, device=device)
+dummy_outputs = {
+    "target": torch.rand(4, 5, device=device),
+    "cyrus_v4_60": torch.rand(4, 5, device=device),
+    "victor_v4_20": torch.rand(4, 5, device=device),
+    "waldo_v4_20": torch.rand(4, 5, device=device),
+}
 # Represents the correct class among the 10 being tested
-dummy_labels = torch.tensor([[1], [0], [3], [4]], device=device)
+dummy_labels = torch.tensor(
+    [[1, 1, 1, 1], [0, 0, 0, 0], [3, 3, 3, 3], [4, 4, 4, 4]], device=device
+)
 
 print(dummy_outputs)
 print(dummy_labels)
 
-targets_weights = compute_target_weight({"target"})
+targets_weights = compute_target_weight(targets)
 print(targets_weights)
 
 loss_fn = create_loss_fn(targets_weights, device=device)
-loss = loss_fn(dummy_outputs, dummy_labels)
+loss, _ = loss_fn(dummy_outputs, dummy_labels)
 print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
@@ -82,7 +89,7 @@ def train_one_epoch(epoch_index, tb_writer):
         outputs = model(inputs)
 
         # Compute the loss and its gradients
-        loss = loss_fn(outputs, labels)
+        loss, aux = loss_fn(outputs, labels)
         loss.backward()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
@@ -91,6 +98,10 @@ def train_one_epoch(epoch_index, tb_writer):
 
         # Gather data and report
         running_loss += loss.item()
+        tb_x = epoch_index * len(training_loader) + i + 1
+        for k, v in aux.items():
+            tb_writer.add_scalar(f"{k}/train", v.item(), tb_x)
+
         if i % 500 == 499:
             last_loss = running_loss / 500  # loss per batch
             print("  batch {} loss: {}".format(i + 1, last_loss))
@@ -131,7 +142,7 @@ for epoch in range(EPOCHS):
             vlabels = vlabels.to(device)
 
             voutputs = model(vinputs)
-            vloss = loss_fn(voutputs, vlabels)
+            vloss, _ = loss_fn(voutputs, vlabels)
             running_vloss += vloss
 
     avg_vloss = running_vloss / (i + 1)
