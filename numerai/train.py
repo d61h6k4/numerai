@@ -2,6 +2,7 @@ from datetime import datetime
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
+from torchdata import IterableWrapper
 
 from numerai.dataset import get_dataset, get_features
 from numerai.model import NumeraiModel, create_loss_fn
@@ -14,11 +15,15 @@ collection = "medium"
 
 
 # Create data loaders for our datasets; shuffle for training, not for validation
+dp = IterableWrapper(
+    get_dataset(split="train", version=version, collection=collection, device=device)
+)
+dp = dp.prefetch(10 * 4096)
+
 training_loader = torch.utils.data.DataLoader(
-    get_dataset(split="train", version=version, collection=collection, device=device),
+    dp,
     batch_size=batch_size,
     shuffle=True,
-    num_workers=7,
 )
 validation_loader = torch.utils.data.DataLoader(
     get_dataset(
@@ -28,7 +33,6 @@ validation_loader = torch.utils.data.DataLoader(
     .select(range(10240)),
     batch_size=batch_size,
     shuffle=False,
-    num_workers=7,
 )
 
 model = NumeraiModel(features=get_features(version=version, collection=collection)).to(
