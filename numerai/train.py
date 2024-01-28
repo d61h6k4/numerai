@@ -66,7 +66,7 @@ loss, _ = loss_fn(dummy_outputs, dummy_labels)
 print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.0001)
 
 
 def train_one_epoch(epoch_index, tb_writer):
