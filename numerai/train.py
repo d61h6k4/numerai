@@ -7,7 +7,7 @@ from numerai.dataset import get_dataset, get_features
 from numerai.model import NumeraiModel, create_loss_fn
 from numerai.utils import compute_target_weight
 
-device = "mps"
+device = "cuda" if torch.cuda.is_available() else "mps"
 batch_size = 4096
 version = "4.3"
 collection = "medium"
