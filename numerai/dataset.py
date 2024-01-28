@@ -62,15 +62,17 @@ def get_dataset(
 
     df = pd.read_parquet(f"data/v{version}/{split}_int8.parquet")
 
+    if num is not None:
+        df = df.sample(n=num)
+
     columns = list(targets.keys()) + list(features.keys())
 
     df = df[df["data_type"] == data_type][columns]
-    
-    df[list(features.keys())] = df[list(features.keys())].astype(int)
-    # targets have nan in validation dataset only for few last eras
-    df[list(targets.keys())] = (df[list(targets.keys())].fillna(0.5) * 4).astype(np.int64)
 
-    if num is not None:
-        df = df.sample(n=num)
+    df[list(features.keys())] = df[list(features.keys())].astype(np.int8)
+    # targets have nan in validation dataset only for few last eras
+    df[list(targets.keys())] = (df[list(targets.keys())].fillna(0.5) * 4).astype(
+        np.int8
+    )
 
     return NumeraiDataset(df, features, targets)

@@ -79,8 +79,8 @@ def train_one_epoch(epoch_index, tb_writer):
     for i, data in tqdm(enumerate(training_loader)):
         # Every data instance is an input + label pair
         inputs, labels = data
-        inputs = inputs.to(device)
-        labels = labels.to(device)
+        inputs = inputs.to(dtype=torch.int, device=device)
+        labels = labels.to(dtype=torch.long, device=device)
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
@@ -138,8 +138,8 @@ for epoch in range(EPOCHS):
     with torch.no_grad():
         for i, vdata in enumerate(validation_loader):
             vinputs, vlabels = vdata
-            vinputs = vinputs.to(device)
-            vlabels = vlabels.to(device)
+            vinputs = vinputs.to(dtype=torch.int, device=device)
+            vlabels = vlabels.to(dtype=torch.long, device=device)
 
             voutputs = model(vinputs)
             vloss, _ = loss_fn(voutputs, vlabels)
