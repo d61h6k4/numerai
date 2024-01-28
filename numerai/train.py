@@ -9,7 +9,7 @@ from numerai.model import NumeraiModel, create_loss_fn
 from numerai.utils import compute_target_weight
 
 device = "cuda" if torch.cuda.is_available() else "mps"
-batch_size = 1024
+batch_size = 3072
 version = "4.3"
 collection = "medium"
 
