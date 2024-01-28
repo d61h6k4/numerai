@@ -43,6 +43,7 @@ def get_dataset(
             lambda ex: {
                 "target": int(ex["target"] * 4),
             },
+            num_proc=8
         )
         ds.save_to_disk(f"numerai_{version}_{split}")
 
