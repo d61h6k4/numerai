@@ -37,14 +37,9 @@ def get_dataset(
         features = get_features(version, collection)
         columns = ["era"] + list(targets) + list(features)
 
-        ds = Dataset.from_pandas(
-            df[df["data_type"] == data_type][columns], split=split
-        ).map(
-            lambda ex: {
-                "target": int(ex["target"] * 4),
-            },
-            num_proc=8
-        )
+        df = df[df["data_type"] == data_type][columns]
+        df["target"] = (df["target"] * 4).astype(int)
+        ds = Dataset.from_pandas(df, split=split)
         ds.save_to_disk(f"numerai_{version}_{split}")
 
     return ds.with_format("torch", device=device)
