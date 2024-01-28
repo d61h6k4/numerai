@@ -33,7 +33,7 @@ validation_loader = torch.utils.data.DataLoader(
         version=version,
         features=features,
         targets=targets,
-        num=100_000,
+        num=300_000,
     ),
     batch_size=batch_size,
     shuffle=False,
