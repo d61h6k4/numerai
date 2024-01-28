@@ -19,10 +19,15 @@ training_loader = torch.utils.data.DataLoader(
     get_dataset(split="train", version=version, collection=collection, device=device),
     batch_size=batch_size,
     shuffle=True,
+    pin_memory=True,
 )
 validation_loader = torch.utils.data.DataLoader(
     get_dataset(
-        split="validation", version=version, collection=collection, device=device
+        split="validation",
+        version=version,
+        collection=collection,
+        device=device,
+        num=10000,
     ),
     batch_size=batch_size,
     shuffle=False,
