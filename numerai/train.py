@@ -2,7 +2,7 @@ from datetime import datetime
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-from torchdata import IterableWrapper
+from torchdata.datapipes.iter import IterableWrapper
 
 from numerai.dataset import get_dataset, get_features
 from numerai.model import NumeraiModel, create_loss_fn
