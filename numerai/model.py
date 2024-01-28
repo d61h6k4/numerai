@@ -1,3 +1,4 @@
+from collections import OrderedDict
 from typing import Callable, Mapping, Optional, Union
 from torch import nn
 import torch
@@ -231,8 +232,11 @@ class DCNv2(nn.Module):
 
 
 class EmbeddingsLayer(torch.nn.Module):
-    def __init__(self, features: set[str]):
+    def __init__(self, features: OrderedDict[str, int]):
         super().__init__()
+
+        self._num_features = len(features)
+
         self.layers = torch.nn.ModuleDict(
             {
                 feature_name: torch.nn.Embedding(num_embeddings=5, embedding_dim=3)
@@ -240,15 +244,15 @@ class EmbeddingsLayer(torch.nn.Module):
             }
         )
 
-    def forward(self, inputs: Mapping[str, torch.Tensor]) -> torch.Tensor:
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
         embeddings = []
-        for fn in self.layers:
-            embeddings.append(self.layers[fn](inputs[fn]))
+        for i, fn in enumerate(self.layers):
+            embeddings.append(self.layers[fn](inputs[:, i]))
         return torch.concatenate(embeddings, dim=1)
 
 
 class NumeraiModel(nn.Module):
-    def __init__(self, features: set[str]):
+    def __init__(self, features: OrderedDict[str, int]):
         super().__init__()
 
         num_features = len(features)
@@ -274,6 +278,6 @@ def create_loss_fn(weights, device: str = "cpu"):
     target_loss = nn.CrossEntropyLoss(weight=weights["target"]).to(device)
 
     def loss_fn(inputs, targets):
-        return target_loss(input=inputs, target=targets["target"])
+        return target_loss(input=inputs, target=targets[:, 0])
 
     return loss_fn

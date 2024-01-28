@@ -2,14 +2,14 @@ from datetime import datetime
 
 import torch
 from torch.utils.tensorboard import SummaryWriter
-
+from tqdm import tqdm
 
 from numerai.dataset import get_dataset, get_features, get_targets
 from numerai.model import NumeraiModel, create_loss_fn
 from numerai.utils import compute_target_weight
 
 device = "cuda" if torch.cuda.is_available() else "mps"
-batch_size = 4096
+batch_size = 1024
 version = "4.3"
 collection = "medium"
 
@@ -18,7 +18,12 @@ targets = get_targets(version)
 
 # Create data loaders for our datasets; shuffle for training, not for validation
 training_loader = torch.utils.data.DataLoader(
-    get_dataset(split="train", version=version, collection=collection, device=device),
+    get_dataset(
+        split="train",
+        version=version,
+        features=features,
+        targets=targets,
+    ),
     batch_size=batch_size,
     shuffle=True,
 )
@@ -26,24 +31,22 @@ validation_loader = torch.utils.data.DataLoader(
     get_dataset(
         split="validation",
         version=version,
-        collection=collection,
-        device=device,
+        features=features,
+        targets=targets,
         num=10000,
     ),
     batch_size=batch_size,
     shuffle=False,
 )
 
-model = NumeraiModel(features=get_features(version=version, collection=collection)).to(
-    device=device
-)
+model = NumeraiModel(features=features).to(device=device)
 
 
 # NB: Loss functions expect data in batches, so we're creating batches of 4
 # Represents the model's confidence in each of the 10 classes for a given input
 dummy_outputs = torch.rand(4, 5, device=device)
 # Represents the correct class among the 10 being tested
-dummy_labels = torch.tensor([1, 0, 3, 4], device=device)
+dummy_labels = torch.tensor([[1], [0], [3], [4]], device=device)
 
 print(dummy_outputs)
 print(dummy_labels)
@@ -52,19 +55,11 @@ targets_weights = compute_target_weight({"target"})
 print(targets_weights)
 
 loss_fn = create_loss_fn(targets_weights, device=device)
-loss = loss_fn(dummy_outputs, {"target": dummy_labels})
+loss = loss_fn(dummy_outputs, dummy_labels)
 print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-
-def features_to_tensor(data):
-    return {k: torch.tensor(data[k], dtype=torch.int, device=device) for k in features}
-
-
-def targets_to_tensor(data):
-    return {k: torch.tensor(data[k], dtype=torch.long, device=device) for k in targets}
 
 
 def train_one_epoch(epoch_index, tb_writer):
@@ -74,10 +69,11 @@ def train_one_epoch(epoch_index, tb_writer):
     # Here, we use enumerate(training_loader) instead of
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
-    for i, data in enumerate(training_loader):
+    for i, data in tqdm(enumerate(training_loader)):
         # Every data instance is an input + label pair
-        inputs = features_to_tensor(data)
-        labels = targets_to_tensor(data)
+        inputs, labels = data
+        inputs = inputs.to(device)
+        labels = labels.to(device)
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
@@ -89,7 +85,7 @@ def train_one_epoch(epoch_index, tb_writer):
         loss = loss_fn(outputs, labels)
         loss.backward()
 
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
+        torch.nn.utils.clip_grad_norm_(model.parameters(), 10)
         # Adjust learning weights
         optimizer.step()
 
@@ -130,8 +126,9 @@ for epoch in range(EPOCHS):
     # Disable gradient computation and reduce memory consumption.
     with torch.no_grad():
         for i, vdata in enumerate(validation_loader):
-            vinputs = features_to_tensor(vdata)
-            vlabels = targets_to_tensor(vdata)
+            vinputs, vlabels = vdata
+            vinputs = vinputs.to(device)
+            vlabels = vlabels.to(device)
 
             voutputs = model(vinputs)
             vloss = loss_fn(voutputs, vlabels)

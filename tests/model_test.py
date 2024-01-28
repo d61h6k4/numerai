@@ -15,12 +15,9 @@ class TestEmbeddingsLayer(unittest.TestCase):
     def test_forward(self):
         torch.manual_seed(0)
 
-        inputs = {
-            "feature_0": torch.tensor([0, 1, 2, 3, 4]),
-            "feature_1": torch.tensor([4, 3, 2, 1, 0]),
-        }
+        inputs = torch.tensor([[0, 4], [1, 3], [2, 2], [3, 1], [4, 0]])
 
-        m = EmbeddingsLayer({"feature_0", "feature_1"})
+        m = EmbeddingsLayer({"feature_0": 0, "feature_1": 1})
         result = m(inputs)
 
         self.assertEqual(result.shape, (5, 3 * 2))
