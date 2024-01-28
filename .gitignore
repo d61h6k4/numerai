@@ -163,3 +163,4 @@ data/
 numerai_4.3_train/
 numerai_4.3_validation/
 runs/
+model*
