@@ -18,6 +18,7 @@ training_loader = torch.utils.data.DataLoader(
     get_dataset(split="train", version=version, collection=collection, device=device),
     batch_size=batch_size,
     shuffle=True,
+    num_workers=7,
 )
 validation_loader = torch.utils.data.DataLoader(
     get_dataset(
@@ -27,6 +28,7 @@ validation_loader = torch.utils.data.DataLoader(
     .select(range(10240)),
     batch_size=batch_size,
     shuffle=False,
+    num_workers=7,
 )
 
 model = NumeraiModel(features=get_features(version=version, collection=collection)).to(
