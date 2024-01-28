@@ -25,7 +25,7 @@ class NumeraiDataset(Dataset):
         self, df: pd.DataFrame, features: set[str], targets: set[str], device: str
     ):
         self._data = []
-        for index, row in df.iterrows():
+        for index, row in tqdm(df.iterrows(), desc="Processing dataset"):
             ex = {"id": index}
             for fn in features:
                 ex[fn] = torch.tensor(row[fn], dtype=torch.int, device=device)
