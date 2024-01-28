@@ -2,10 +2,9 @@ import json
 from typing import Mapping
 
 import pandas as pd
-from datasets import Dataset, load_from_disk
-
 import torch
 from torch.utils.data import Dataset
+from tqdm import tqdm
 
 
 def get_features(version: str, collection: str) -> set[str]:
@@ -25,24 +24,20 @@ class NumeraiDataset(Dataset):
     def __init__(
         self, df: pd.DataFrame, features: set[str], targets: set[str], device: str
     ):
-        self._df = df.reset_index()
-        self._features = features
-        self._targets = targets
-        self._device = device
+        self._data = []
+        for index, row in df.iterrows():
+            ex = {"id": index}
+            for fn in features:
+                ex[fn] = torch.tensor(row[fn], dtype=torch.int, device=device)
+            for t in targets:
+                ex[t] = torch.tensor(row[t], dtype=torch.long, device=device)
+            self._data.append(ex)
 
     def __len__(self):
-        return self._df.shape[0]
+        return len(self._data)
 
     def __getitem__(self, index) -> Mapping[str, torch.Tensor]:
-        raw_ex = self._df.iloc[index].to_dict()
-
-        ex = {"id": raw_ex["id"]}
-        for fn in self._features:
-            ex[fn] = torch.tensor(raw_ex[fn], dtype=torch.int, device=self._device)
-        for t in self._targets:
-            ex[t] = torch.tensor(raw_ex[t], dtype=torch.long, device=self._device)
-
-        return ex
+        return self._data[index]
 
 
 def get_dataset(
