@@ -21,27 +21,14 @@ def get_targets(version: str) -> set[str]:
 
 
 class NumeraiDataset(Dataset):
-    def __init__(
-        self, df: pd.DataFrame, features: set[str], targets: set[str], device: str
-    ):
+    def __init__(self, df: pd.DataFrame):
         self._df = df.reset_index()
-        self._features = features
-        self._targets = targets
-        self._device = device
 
     def __len__(self):
         return self._df.shape[0]
 
     def __getitem__(self, index) -> Mapping[str, torch.Tensor]:
-        raw_ex = self._df.iloc[index].to_dict()
-
-        ex = {"id": raw_ex["id"]}
-        for fn in self._features:
-            ex[fn] = torch.tensor(raw_ex[fn], dtype=torch.int, device=self._device)
-        for t in self._targets:
-            ex[t] = torch.tensor(raw_ex[t], dtype=torch.long, device=self._device)
-
-        return ex
+        return self._df.iloc[index].to_dict()
 
 
 def get_dataset(
@@ -68,4 +55,4 @@ def get_dataset(
     if num is not None:
         df = df.sample(n=num)
 
-    return NumeraiDataset(df, features, targets, device)
+    return NumeraiDataset(df)

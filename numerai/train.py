@@ -4,7 +4,7 @@ import torch
 from torch.utils.tensorboard import SummaryWriter
 
 
-from numerai.dataset import get_dataset, get_features
+from numerai.dataset import get_dataset, get_features, get_targets
 from numerai.model import NumeraiModel, create_loss_fn
 from numerai.utils import compute_target_weight
 
@@ -13,6 +13,8 @@ batch_size = 4096
 version = "4.3"
 collection = "medium"
 
+features = get_features(version, collection)
+targets = get_targets(version)
 
 # Create data loaders for our datasets; shuffle for training, not for validation
 training_loader = torch.utils.data.DataLoader(
@@ -50,11 +52,19 @@ targets_weights = compute_target_weight({"target"})
 print(targets_weights)
 
 loss_fn = create_loss_fn(targets_weights, device=device)
-loss = loss_fn(dummy_outputs, dummy_labels)
+loss = loss_fn(dummy_outputs, {"target": dummy_labels})
 print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+
+
+def features_to_tensor(data):
+    return {k: torch.tensor(data[k], dtype=torch.int, device=device) for k in features}
+
+
+def targets_to_tensor(data):
+    return {k: torch.tensor(data[k], dtype=torch.long, device=device) for k in targets}
 
 
 def train_one_epoch(epoch_index, tb_writer):
@@ -65,10 +75,9 @@ def train_one_epoch(epoch_index, tb_writer):
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
     for i, data in enumerate(training_loader):
-        print(i)
         # Every data instance is an input + label pair
-        inputs = data
-        labels = data["target"]
+        inputs = features_to_tensor(data)
+        labels = targets_to_tensor(data)
 
         # Zero your gradients for every batch!
         optimizer.zero_grad()
@@ -121,8 +130,8 @@ for epoch in range(EPOCHS):
     # Disable gradient computation and reduce memory consumption.
     with torch.no_grad():
         for i, vdata in enumerate(validation_loader):
-            vinputs = vdata
-            vlabels = vdata["target"]
+            vinputs = features_to_tensor(vdata)
+            vlabels = targets_to_tensor(vdata)
 
             voutputs = model(vinputs)
             vloss = loss_fn(voutputs, vlabels)

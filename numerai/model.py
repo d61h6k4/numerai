@@ -274,6 +274,6 @@ def create_loss_fn(weights, device: str = "cpu"):
     target_loss = nn.CrossEntropyLoss(weight=weights["target"]).to(device)
 
     def loss_fn(inputs, targets):
-        return target_loss(input=inputs, target=targets.to(dtype=torch.long))
+        return target_loss(input=inputs, target=targets["target"])
 
     return loss_fn
