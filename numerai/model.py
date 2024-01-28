@@ -179,12 +179,12 @@ class LowRankMixtureCrossNet(torch.nn.Module):
 
 
 class DeepNetwork(torch.nn.Module):
-    def __init__(self, num_layers: int, in_features: int):
+    def __init__(self, num_layers: int, in_features: int, dropout_rate: float = 0.5):
         super().__init__()
         layers = (
             [
                 torch.nn.BatchNorm1d(num_features=in_features),
-                torch.nn.Dropout1d(p=0.1),
+                torch.nn.Dropout1d(p=dropout_rate),
                 nn.Linear(
                     in_features=in_features, out_features=2 * in_features, bias=False
                 ),
@@ -192,7 +192,7 @@ class DeepNetwork(torch.nn.Module):
             ]
             + [
                 torch.nn.BatchNorm1d(num_features=2 * in_features),
-                torch.nn.Dropout1d(p=0.1),
+                torch.nn.Dropout1d(p=dropout_rate),
                 nn.Linear(
                     in_features=2 * in_features,
                     out_features=2 * in_features,
@@ -203,7 +203,7 @@ class DeepNetwork(torch.nn.Module):
             * (num_layers - 2)
             + [
                 torch.nn.BatchNorm1d(num_features=2 * in_features),
-                torch.nn.Dropout1d(p=0.1),
+                torch.nn.Dropout1d(p=dropout_rate),
                 nn.Linear(
                     in_features=2 * in_features, out_features=in_features, bias=False
                 ),
@@ -217,15 +217,15 @@ class DeepNetwork(torch.nn.Module):
 
 
 class DCNv2(nn.Module):
-    def __init__(self, num_layers: int, in_features: int):
+    def __init__(self, in_features: int):
         super().__init__()
         self.cross_network = LowRankMixtureCrossNet(
             in_features=in_features,
-            num_layers=num_layers,
+            num_layers=10,
             num_experts=5,
             low_rank=in_features // 4,
         )
-        self.deep_network = DeepNetwork(num_layers, in_features)
+        self.deep_network = DeepNetwork(5, in_features)
 
     def forward(self, x):
         return self.deep_network(self.cross_network(x))
@@ -258,7 +258,7 @@ class NumeraiModel(nn.Module):
         num_features = len(features)
 
         self.embeddings_layer = EmbeddingsLayer(features)
-        self.shared_bottom = DCNv2(3, 3 * num_features)
+        self.shared_bottom = DCNv2(3 * num_features)
         self.target_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
             torch.nn.Dropout1d(p=0.1),
@@ -268,21 +268,21 @@ class NumeraiModel(nn.Module):
         )
         self.cyrus_v4_60_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(p=0.1),
+            torch.nn.Dropout1d(),
             nn.Linear(3 * num_features, 32, bias=False),
             nn.ReLU(),
             nn.Linear(32, 5),
         )
         self.victor_v4_20_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(p=0.1),
+            torch.nn.Dropout1d(),
             nn.Linear(3 * num_features, 32, bias=False),
             nn.ReLU(),
             nn.Linear(32, 5),
         )
         self.waldo_v4_20_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(p=0.1),
+            torch.nn.Dropout1d(),
             nn.Linear(3 * num_features, 32, bias=False),
             nn.ReLU(),
             nn.Linear(32, 5),
