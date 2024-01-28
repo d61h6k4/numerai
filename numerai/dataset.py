@@ -25,7 +25,7 @@ class NumeraiDataset(Dataset):
     def __init__(
         self, df: pd.DataFrame, features: set[str], targets: set[str], device: str
     ):
-        self._df = df
+        self._df = df.reset_index()
         self._features = features
         self._targets = targets
         self._device = device
