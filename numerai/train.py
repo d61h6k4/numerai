@@ -19,7 +19,6 @@ training_loader = torch.utils.data.DataLoader(
     get_dataset(split="train", version=version, collection=collection, device=device),
     batch_size=batch_size,
     shuffle=True,
-    pin_memory=True,
 )
 validation_loader = torch.utils.data.DataLoader(
     get_dataset(
@@ -66,6 +65,7 @@ def train_one_epoch(epoch_index, tb_writer):
     # iter(training_loader) so that we can track the batch
     # index and do some intra-epoch reporting
     for i, data in enumerate(training_loader):
+        print(i)
         # Every data instance is an input + label pair
         inputs = data
         labels = data["target"]
