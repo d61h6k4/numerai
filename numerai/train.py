@@ -67,7 +67,9 @@ print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
 optimizer = torch.optim.Adam(model.parameters(), lr=5e-4)
-scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(optimizer, 2000, 2, 1e-6)
+scheduler = torch.optim.lr_scheduler.CosineAnnealingWarmRestarts(
+    optimizer, 2000, 2, 1e-6
+)
 
 
 def train_one_epoch(epoch_index, tb_writer):
@@ -101,7 +103,7 @@ def train_one_epoch(epoch_index, tb_writer):
         # Gather data and report
         running_loss += loss.item()
         tb_x = epoch_index * len(training_loader) + i + 1
-        tb_writer("LR", scheduler.get_lr(), tb_x)
+        tb_writer.add_scalar("LR", scheduler.get_lr(), tb_x)
         for k, v in aux.items():
             tb_writer.add_scalar(f"{k}/train", v.item(), tb_x)
 
