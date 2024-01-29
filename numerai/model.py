@@ -225,7 +225,7 @@ class DCNv2(nn.Module):
             num_experts=5,
             low_rank=in_features // 4,
         )
-        self.deep_network = DeepNetwork(3, in_features)
+        self.deep_network = DeepNetwork(3, in_features, dropout_rate=0.3)
 
     def forward(self, x):
         return self.deep_network(self.cross_network(x))
@@ -251,6 +251,20 @@ class EmbeddingsLayer(torch.nn.Module):
         return torch.concatenate(embeddings, dim=1)
 
 
+class Head(nn.Module):
+    def __init__(self, num_features: int, dropout_rate: float = 0.3):
+        self.layers = nn.Sequential(
+            torch.nn.BatchNorm1d(num_features=3 * num_features),
+            torch.nn.Dropout1d(p=dropout_rate),
+            nn.Linear(3 * num_features, 32, bias=False),
+            nn.ReLU(),
+            nn.Linear(32, 5),
+        )
+
+    def forward(self, x):
+        return self.layers(x)
+
+
 class NumeraiModel(nn.Module):
     def __init__(self, features: OrderedDict[str, int]):
         super().__init__()
@@ -259,34 +273,10 @@ class NumeraiModel(nn.Module):
 
         self.embeddings_layer = EmbeddingsLayer(features)
         self.shared_bottom = DCNv2(3 * num_features)
-        self.target_head = nn.Sequential(
-            torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(),
-            nn.Linear(3 * num_features, 32, bias=False),
-            nn.ReLU(),
-            nn.Linear(32, 5),
-        )
-        self.cyrus_v4_60_head = nn.Sequential(
-            torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(),
-            nn.Linear(3 * num_features, 32, bias=False),
-            nn.ReLU(),
-            nn.Linear(32, 5),
-        )
-        self.victor_v4_20_head = nn.Sequential(
-            torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(),
-            nn.Linear(3 * num_features, 32, bias=False),
-            nn.ReLU(),
-            nn.Linear(32, 5),
-        )
-        self.waldo_v4_20_head = nn.Sequential(
-            torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(),
-            nn.Linear(3 * num_features, 32, bias=False),
-            nn.ReLU(),
-            nn.Linear(32, 5),
-        )
+        self.target_head = Head(num_features=num_features)
+        self.cyrus_v4_60_head = Head(num_features=num_features)
+        self.victor_v4_20_head = Head(num_features=num_features)
+        self.waldo_v4_20_head = Head(num_features=num_features)
 
     def forward(self, input: Mapping[str, torch.Tensor]) -> torch.Tensor:
         embeddings = self.embeddings_layer(input)
