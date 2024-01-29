@@ -9,7 +9,7 @@ from numerai.model import NumeraiModel, create_loss_fn
 from numerai.utils import compute_target_weight
 
 device = "cuda" if torch.cuda.is_available() else "mps"
-batch_size = 3072
+batch_size = 1024
 version = "4.3"
 collection = "medium"
 
@@ -66,7 +66,7 @@ loss, _ = loss_fn(dummy_outputs, dummy_labels)
 print("Total loss for this batch: {}".format(loss.item()))
 
 # Optimizers specified in the torch.optim package
-optimizer = torch.optim.Adam(model.parameters(), lr=0.0005)
+optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
 
 def train_one_epoch(epoch_index, tb_writer):
@@ -118,7 +118,7 @@ logdir = "runs/fashion_trainer_{}".format(timestamp)
 writer = SummaryWriter(logdir)
 epoch_number = 0
 
-EPOCHS = 50
+EPOCHS = 10
 
 best_vloss = 1_000_000.0
 

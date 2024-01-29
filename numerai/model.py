@@ -221,11 +221,11 @@ class DCNv2(nn.Module):
         super().__init__()
         self.cross_network = LowRankMixtureCrossNet(
             in_features=in_features,
-            num_layers=7,
+            num_layers=5,
             num_experts=5,
             low_rank=in_features // 4,
         )
-        self.deep_network = DeepNetwork(5, in_features)
+        self.deep_network = DeepNetwork(3, in_features)
 
     def forward(self, x):
         return self.deep_network(self.cross_network(x))
@@ -261,7 +261,7 @@ class NumeraiModel(nn.Module):
         self.shared_bottom = DCNv2(3 * num_features)
         self.target_head = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
-            torch.nn.Dropout1d(p=0.1),
+            torch.nn.Dropout1d(),
             nn.Linear(3 * num_features, 32, bias=False),
             nn.ReLU(),
             nn.Linear(32, 5),
