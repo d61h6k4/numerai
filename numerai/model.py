@@ -253,6 +253,7 @@ class EmbeddingsLayer(torch.nn.Module):
 
 class Head(nn.Module):
     def __init__(self, num_features: int, dropout_rate: float = 0.3):
+        super().__init__()
         self.layers = nn.Sequential(
             torch.nn.BatchNorm1d(num_features=3 * num_features),
             torch.nn.Dropout1d(p=dropout_rate),
